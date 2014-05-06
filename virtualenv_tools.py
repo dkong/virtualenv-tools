@@ -24,7 +24,7 @@ ACTIVATION_SCRIPTS = [
     'activate.csh',
     'activate.fish'
 ]
-_pybin_match = re.compile(r'^python\d+\.\d+$')
+_pybin_match = re.compile(r'^lib[/-]python/?\d+\.\d+$')
 _activation_path_re = re.compile(r'^(?:set -gx |setenv |)VIRTUAL_ENV[ =]"(.*?)"\s*$')
 
 
@@ -54,6 +54,8 @@ def update_activation_script(script_filename, new_path):
 
 def update_script(script_filename, bin_dir, new_path):
     """Updates shebang lines for actual scripts."""
+    if not os.path.isfile(script_filename):
+        return
     with open(script_filename) as f:
         lines = list(f)
     if not lines:
@@ -171,19 +173,23 @@ def update_paths(base, new_path):
         return False
 
     bin_dir = os.path.join(base, 'bin')
-    base_lib_dir = os.path.join(base, 'lib')
     lib_dir = None
     lib_name = None
 
-    if os.path.isdir(base_lib_dir):
-        for folder in os.listdir(base_lib_dir):
-            if _pybin_match.match(folder):
-                lib_name = folder
-                lib_dir = os.path.join(base_lib_dir, folder)
-                break
+    for base_lib_dir in os.listdir(base):
+        if base_lib_dir.startswith("lib"):
+            subdir = os.path.join(base, base_lib_dir)
+            if os.path.isdir(subdir):
+                for folder in os.listdir(subdir):
+                    if _pybin_match.match("/".join((base_lib_dir, folder))):
+                        lib_name = folder
+                        lib_dir = os.path.join(subdir, folder)
+                        break
+                if lib_dir:
+                    break
 
     if lib_dir is None or not os.path.isdir(bin_dir) \
-       or not os.path.isfile(os.path.join(bin_dir, 'python')):
+       or not os.path.exists(os.path.join(bin_dir, 'python')):
         print 'error: %s does not refer to a python installation' % base
         return False
 
