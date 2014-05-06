@@ -52,7 +52,7 @@ def update_activation_script(script_filename, new_path):
             f.writelines(lines)
 
 
-def update_script(script_filename, new_path):
+def update_script(script_filename, bin_dir, new_path):
     """Updates shebang lines for actual scripts."""
     with open(script_filename) as f:
         lines = list(f)
@@ -65,11 +65,15 @@ def update_script(script_filename, new_path):
     if not args:
         return
 
-    if not args[0].endswith('/bin/python') or \
-       '/usr/bin/env python' in args[0]:
+    if args[0].endswith("bin/env"):
+        bin_file = args[1]
+    else:
+        _, bin_file = os.path.split(args[0])
+
+    if not os.path.exists(os.path.join(bin_dir, bin_file)):
         return
 
-    new_bin = os.path.join(new_path, 'bin', 'python')
+    new_bin = os.path.join(new_path, 'bin', bin_file)
     if new_bin == args[0]:
         return
 
@@ -86,7 +90,7 @@ def update_scripts(bin_dir, new_path):
         if fn in ACTIVATION_SCRIPTS:
             update_activation_script(os.path.join(bin_dir, fn), new_path)
         else:
-            update_script(os.path.join(bin_dir, fn), new_path)
+            update_script(os.path.join(bin_dir, fn), bin_dir, new_path)
 
 
 def update_pyc(filename, new_path):
