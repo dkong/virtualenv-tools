@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 """
-    move-virtualenv
-    ~~~~~~~~~~~~~~~
+    virtualenv-tools
+    ~~~~~~~~~~~~~~~~
 
     A helper script that moves virtualenvs to a new location.
 
