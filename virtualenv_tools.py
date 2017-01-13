@@ -145,6 +145,63 @@ def update_pycs(lib_dir, new_path, lib_name):
                 if local_path is not None:
                     update_pyc(filename, local_path)
 
+def get_lib_dir_name(base):
+    lib_dir = None
+    lib_name = None
+
+    for base_lib_dir in os.listdir(base):
+        if base_lib_dir.startswith("lib"):
+            subdir = os.path.join(base, base_lib_dir)
+            if os.path.isdir(subdir):
+                for folder in os.listdir(subdir):
+                    if _pybin_match.match("/".join((base_lib_dir, folder))):
+                        lib_name = folder
+                        lib_dir = os.path.join(subdir, folder)
+                        break
+                if lib_dir:
+                    break
+
+    return lib_dir, lib_name
+
+def update_pypy(base, old_link, new_link):
+    lib_dir, lib_name = get_lib_dir_name(base)
+
+    filename = os.path.join(base, 'bin', 'python')
+    if os.path.islink(filename):
+        target = './pypy'
+        if os.readlink(filename) != target:
+            os.remove(filename)
+            os.symlink(target, filename)
+            print 'N %s' % filename
+
+    for filename in [os.path.join(base, 'bin', 'libpypy-c.so'), os.path.join(base, 'lib_pypy', 'readline.py'), os.path.join(base, 'include')]:
+        if os.path.islink(filename):
+            target = os.readlink(filename).replace(old_link, new_link)
+            if os.readlink(filename) != target:
+                os.remove(filename)
+                os.symlink(target, filename)
+                print 'N %s' % filename
+
+    for root, dirs, files in os.walk(base):
+        for f in files:
+            filename = os.path.join(os.getcwd(), root, f).replace('/./', '/')
+            if os.path.islink(filename):
+                target = os.readlink(filename).replace(old_link, new_link)
+                if os.readlink(filename) != target:
+                    os.remove(filename)
+                    os.symlink(target, filename)
+                    print 'N %s' % filename
+
+    filename = os.path.join(lib_dir, 'orig-prefix.txt')
+    with open(filename, 'r+t') as f:
+        line = f.read().strip()
+        target = line.replace(old_link, new_link)
+        if line != target:
+            f.seek(0)
+            f.write(target)
+            f.truncate()
+            f.close()
+            print 'N %s' % filename
 
 def update_local(base, new_path):
     """On some systems virtualenv seems to have something like a local
@@ -173,20 +230,7 @@ def update_paths(base, new_path):
         return False
 
     bin_dir = os.path.join(base, 'bin')
-    lib_dir = None
-    lib_name = None
-
-    for base_lib_dir in os.listdir(base):
-        if base_lib_dir.startswith("lib"):
-            subdir = os.path.join(base, base_lib_dir)
-            if os.path.isdir(subdir):
-                for folder in os.listdir(subdir):
-                    if _pybin_match.match("/".join((base_lib_dir, folder))):
-                        lib_name = folder
-                        lib_dir = os.path.join(subdir, folder)
-                        break
-                if lib_dir:
-                    break
+    lib_dir, lib_name = get_lib_dir_name(base)
 
     if lib_dir is None or not os.path.isdir(bin_dir) \
        or not os.path.exists(os.path.join(bin_dir, 'python')):
@@ -254,6 +298,8 @@ def main():
                       'required executables and helper files that are '
                       'supported to the new python prefix.  You can also set '
                       'this to "auto" for autodetection.')
+    parser.add_option('--update-pypy-old', help='Path to previous pypy location')
+    parser.add_option('--update-pypy-new', help='Path to new pypy location')
     options, paths = parser.parse_args()
     if not paths:
         paths = ['.']
@@ -267,6 +313,10 @@ def main():
         for path in paths:
             if not update_paths(path, options.update_path):
                 rv = 1
+    if options.update_pypy_old and options.update_pypy_new:
+        for path in paths:
+            update_pypy(path, options.update_pypy_old, options.update_pypy_new)
+
     sys.exit(rv)
 
 
