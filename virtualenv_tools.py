@@ -306,16 +306,19 @@ def main():
 
     rv = 0
 
-    if options.reinitialize:
-        for path in paths:
-            reinitialize_virtualenv(path)
-    if options.update_path:
-        for path in paths:
-            if not update_paths(path, options.update_path):
-                rv = 1
-    if options.update_pypy_old and options.update_pypy_new:
-        for path in paths:
-            update_pypy(path, options.update_pypy_old, options.update_pypy_new)
+    try:
+        if options.reinitialize:
+            for path in paths:
+                reinitialize_virtualenv(path)
+        if options.update_path:
+            for path in paths:
+                if not update_paths(path, options.update_path):
+                    rv = 1
+        if options.update_pypy_old and options.update_pypy_new:
+            for path in paths:
+                update_pypy(path, options.update_pypy_old, options.update_pypy_new)
+    except Exception as e:
+        print e
 
     sys.exit(rv)
 
