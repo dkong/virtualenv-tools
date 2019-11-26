@@ -172,7 +172,7 @@ def update_pypy(base, old_link, new_link):
         if os.readlink(filename) != target:
             os.remove(filename)
             os.symlink(target, filename)
-            print 'N %s' % filename
+            print 'N1 %s %s' % (target, filename)
 
     for filename in [os.path.join(base, 'bin', 'libpypy-c.so'), os.path.join(base, 'lib_pypy', 'readline.py'), os.path.join(base, 'include')]:
         if os.path.islink(filename):
@@ -180,7 +180,7 @@ def update_pypy(base, old_link, new_link):
             if os.readlink(filename) != target:
                 os.remove(filename)
                 os.symlink(target, filename)
-                print 'N %s' % filename
+                print 'N2 %s %s' % (target, filename)
 
     for root, dirs, files in os.walk(base):
         for f in files:
@@ -190,7 +190,7 @@ def update_pypy(base, old_link, new_link):
                 if os.readlink(filename) != target:
                     os.remove(filename)
                     os.symlink(target, filename)
-                    print 'N %s' % filename
+                    print 'N3 %s %s' % (target, filename)
 
     filename = os.path.join(lib_dir, 'orig-prefix.txt')
     with open(filename, 'r+t') as f:
@@ -201,7 +201,7 @@ def update_pypy(base, old_link, new_link):
             f.write(target)
             f.truncate()
             f.close()
-            print 'N %s' % filename
+            print 'N4 %s' % filename
 
 def update_local(base, new_path):
     """On some systems virtualenv seems to have something like a local
